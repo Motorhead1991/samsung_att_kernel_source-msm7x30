@@ -1,0 +1,687 @@
+/* Copyright (c) 2009, Code Aurora Forum. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *     * Redistributions of source code must retain the above copyright
+ *       notice, this list of conditions and the following disclaimer.
+ *     * Redistributions in binary form must reproduce the above copyright
+ *       notice, this list of conditions and the following disclaimer in the
+ *       documentation and/or other materials provided with the distribution.
+ *     * Neither the name of Code Aurora Forum nor
+ *       the names of its contributors may be used to endorse or promote
+ *       products derived from this software without specific prior written
+ *       permission.
+ *
+ * Alternatively, provided that this notice is retained in full, this software
+ * may be relicensed by the recipient under the terms of the GNU General Public
+ * License version 2 ("GPL") and only version 2, in which case the provisions of
+ * the GPL apply INSTEAD OF those given above.  If the recipient relicenses the
+ * software under the GPL, then the identification text in the MODULE_LICENSE
+ * macro must be changed to reflect "GPLv2" instead of "Dual BSD/GPL".  Once a
+ * recipient changes the license terms to the GPL, subsequent recipients shall
+ * not relicense under alternate licensing terms, including the BSD or dual
+ * BSD/GPL terms.  In addition, the following license statement immediately
+ * below and between the words START and END shall also then apply when this
+ * software is relicensed under the GPL:
+ *
+ * START
+ *
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 2 and only version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ * details.
+ *
+ * You should have received a copy of the GNU General Public License along with
+ * this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+ *
+ * END
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ *
+ */
+
+#ifndef __LCDC_S6E63M0_H__
+#define __LCDC_S6E63M0_H__
+
+#define S6E63M0_WRITE_LIST(A) \
+    {\
+        int i, size = (int)(sizeof(A)/sizeof(struct setting_table));\
+        for(i=0;i<size;i++)lcdc_s6e63m0_write(&A[i]);\
+    }
+
+#define LCDC_DEBUG
+#ifdef LCDC_DEBUG
+#define DPRINT(x...)    printk("[LCDDRV/S6E63M0] " x)
+#else
+#define DPRINT(x...)
+#endif
+#define CONFIG_USES_ACL
+#define GAMMASET_CONTROL
+
+/* Serial Interface */
+#define LCD_CSX_HIGH    gpio_set_value(spi_cs, 1);
+#define LCD_CSX_LOW    gpio_set_value(spi_cs, 0);
+
+#define LCD_SCL_HIGH    gpio_set_value(spi_sclk, 1);
+#define LCD_SCL_LOW    gpio_set_value(spi_sclk, 0);
+
+#define LCD_SDI_HIGH    gpio_set_value(spi_sdi, 1);
+#define LCD_SDI_LOW    gpio_set_value(spi_sdi, 0);
+
+#define DEFAULT_USLEEP    1
+
+#define VREG_ENABLE    1
+#define VREG_DISABLE    0
+
+/* brightness level informtion */
+#define MAX_BRIGHTNESS_VALUE 255
+#define MIN_BRIGHTNESS_VALUE 30
+#define DIM_BL	20
+#define MIN_BL	30
+#define MAX_BL	255
+#define MAX_GAMMA_VALUE		22
+#define MAX_BRT_STAGE (int)(sizeof(brt_table)/sizeof(struct brightness_level))
+
+#define LCDC_FB_XRES    480
+#define LCDC_FB_YRES    800
+#define LCDC_HPW    2
+#define LCDC_HBP    14
+#define LCDC_HFP    16
+#define LCDC_VPW    2
+#define LCDC_VBP    1
+#define LCDC_VFP    28
+
+enum {
+    GPIO_INPUT,
+    GPIO_OUTPUT,
+};
+
+/* GPIO TLMM: Pullup/Pulldown */
+enum {
+    GPIO_NO_PULL,
+    GPIO_PULL_DOWN,
+    GPIO_KEEPER,
+    GPIO_PULL_UP,
+};
+
+/* GPIO TLMM: Drive Strength */
+enum {
+    GPIO_2MA,
+    GPIO_4MA,
+    GPIO_6MA,
+    GPIO_8MA,
+    GPIO_10MA,
+    GPIO_12MA,
+    GPIO_14MA,
+    GPIO_16MA,
+};
+
+enum {
+    GPIO_ENABLE,
+    GPIO_DISABLE,
+};
+
+struct setting_table {
+    unsigned char command;
+    unsigned char parameters;
+    unsigned char parameter[32];
+    long wait;
+};
+
+struct samsung_spi_data {
+	u8 addr;
+	u8 len;
+	u8 data[40];
+};
+
+
+
+struct brightness_level{
+    int platform_level;// Platform setting values
+    int driver_level;// Chip Setting values
+};
+
+static int lcdc_s6e63m0_get_ldi_state(void);
+static void lcdc_s6e63m0_set_ldi_state(int OnOff);
+static void lcdc_s6e63m0_write_no_spinlock(struct setting_table *table);
+static void lcdc_s6e63m0_write(struct setting_table *table);
+static void lcdc_s6e63m0_spi_init(void);
+static void lcdc_s6e63m0_disp_powerup(void);
+static void lcdc_s6e63m0_disp_powerdown(void);
+static void lcdc_s6e63m0_disp_on(void);
+static int lcdc_s6e63m0_get_gamma_value_from_bl(int bl);
+static void lcdc_s6e63m0_set_brightness(int level);
+static ssize_t s6e63m0_show_power(struct device *dev, struct device_attribute *attr, char *buf);
+static ssize_t s6e63m0_store_power(struct device *dev, struct device_attribute *attr, const char *buf, size_t count);
+static ssize_t s6e63m0_show_lcd_type(struct device *dev, struct device_attribute *attr, char *buf);
+#ifdef CONFIG_USES_ACL
+//static void lcdc_s6e63m0_set_acl_parameter(struct s6e63m0_state_type *lcd);
+static ssize_t aclset_file_cmd_show(struct device *dev, struct device_attribute *attr, char *buf);
+static ssize_t aclset_file_cmd_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t size);
+#endif
+#ifdef GAMMASET_CONTROL
+static ssize_t gammaset_file_cmd_show(struct device *dev, struct device_attribute *attr, char *buf);
+static ssize_t gammaset_file_cmd_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t size);
+#endif
+
+static int lcdc_s6e63m0_panel_on(struct platform_device *pdev);
+static int lcdc_s6e63m0_panel_off(struct platform_device *pdev);
+static void lcdc_s6e63m0_set_backlight(struct msm_fb_data_type *mfd);
+
+
+#if defined(CONFIG_MACH_APACHE)
+
+static struct setting_table  s6e63m0_22gamma_300cd_new_hw[] = {
+    { 0xFA,    22, 
+        { 0x02, 0x18 ,0x08 ,0x24 ,0x6B,0x76 ,0x57 ,0xBD,0xC3,0xB5,0xB4,
+		0xBB,0xAC,0xC5,0xC9,0xC0,0x00 ,0xB7,0x00 ,0xAB,0x00 ,0xCF, },
+    0 },                                                              
+};                                              
+                                                
+static struct setting_table s6e63m0_22gamma_290cd_new_hw[] = {
+    { 0xFA,    22,                                         
+        { 0x02,0x18 ,0x08 ,0x24 ,0x6B,0x76 ,0x57 ,0xBD,0xC3,0xB5,0xB5,
+0xBC,0xAD,0xC4,0xC9,0xC0,0x00,0xB6,0x00,0xA9,0x00,0xCC,},
+    0 },                                 
+};                                              
+                                                
+static struct setting_table s6e63m0_22gamma_280cd_new_hw[] = {
+    { 0xFA,    22,                                         
+        { 0x02,0x18,0x08,0x24,0x69,0x76,0x57,0xBD,0xC2,0xB4,0xB5,0xBC,
+0xAE,0xC4,0xC9,0xC0,0x00,0xB3,0x00,0xA6,0x00,0xC9, },
+    0 },                                 
+};                                              
+                                                
+static struct setting_table s6e63m0_22gamma_270cd_new_hw[] = {
+    { 0xFA,    22,                                         
+        { 0x02, 0x18,0x08,0x24,0x69,0x76,0x57,0xBD,0xC3,0xB4,0xB6,0xBC,
+0xAF,0xC6,0xCB,0xC2,0x00,0xB1,0x00,0xA4,0x00,0xC6,},
+    0 },                                 
+};                                              
+                                                
+static struct setting_table s6e63m0_22gamma_260cd_new_hw[] = {
+    { 0xFA,    22,                                         
+        { 0x02, 0x18,0x08,0x24,0x6A,0x78,0x5B,0xBE,0xC3,0xB5,0xB6,0xBF,
+0xAF,0xC7,0xCC,0xC2,0x00,0xAE,0x00,0xA1,0x00,0xC3,},
+    0 },                                 
+ };                                              
+                                                
+static struct setting_table s6e63m0_22gamma_250cd_new_hw[] = {
+    { 0xFA,    22,                                         
+        { 0x02, 0x18,0x08,0x24,0x6B,0x77,0x5B,0xBF,0xC4,0xB6,0xB7,0xBE,
+0xB0,0xC7,0xCC,0xC2,0x00,0xAC,0x00,0x9F,0x00,0xC1, },
+    0 },                                 
+};                                              
+                                                
+static struct setting_table s6e63m0_22gamma_240cd_new_hw[] = {
+    { 0xFA,    22,                                         
+        { 0x02, 0x18,0x08,0x24,0x6D,0x77,0x5C,0xBF,0xC5,0xB6,0xB7,0xBE,
+0xB0,0xC8,0xCC,0xC3,0x00,0xA9,0x00,0x9D,0x00,0xBE,},
+    0 },                                 
+};                                              
+                                                
+static struct setting_table s6e63m0_22gamma_230cd_new_hw[] = {
+    { 0xFA,    22,                                         
+        { 0x02,0x18,0x08,0x24,0x6E,0x77,0x5C, 0xBE, 0xC4, 0xB6,0xB8,0xBF, 
+0xB1,0xC9,0xCD,0xC4,0x00,0xA6,0x00,0x9A,0x00,0xBA,     },
+    0 },                                 
+ };                                              
+                                                
+static struct setting_table s6e63m0_22gamma_220cd_new_hw[] = {
+    { 0xFA,    22,                                         
+        { 0x02,0x18,0x08,0x24,0x6E,0x77,0x5C,0xBF,0xC5,0xB7,0xB9,0xBF, 
+0xB1,0xC8, 0xCD, 0xC4, 0x00, 0xA4, 0x00, 0x98, 0x00, 0xB8,  },
+    0 },                                 
+ };                                              
+                                                
+static struct setting_table s6e63m0_22gamma_210cd_new_hw[] = {
+    { 0xFA,    22,                                         
+        { 0x02,0x18,0x08, 0x24, 0x6B, 0x74, 0x5B, 0xC0, 0xC5, 0xB7, 0xB8, 
+0xBF, 0xB1, 0xCA, 0xCF, 0xC5, 0x00, 0xA1, 0x00, 0x95, 0x00, 0xB5,  },
+    0 },                                 
+ };                                              
+                                                
+static struct setting_table s6e63m0_22gamma_200cd_new_hw[] = {
+    { 0xFA,    22,                                         
+        { 0x02, 0x18,0x08, 0x24, 0x6E, 0x77, 0x5E, 0xBF, 0xC5, 0xB7, 0xBB, 
+0xC1, 0xB3, 0xCA, 0xCE, 0xC5, 0x00, 0x9E, 0x00, 0x93, 0x00, 0xB2,  },
+    0 },                                 
+ };                                              
+                                                
+static struct setting_table s6e63m0_22gamma_190cd_new_hw[] = {
+    { 0xFA,    22,                                         
+        { 0x02, 0x18,0x08, 0x24, 0x6F, 0x79, 0x61, 0xC0, 0xC5, 0xB7, 0xBA, 
+0xC1, 0xB3, 0xCB, 0xCF, 0xC6, 0x00, 0x9B, 0x00, 0x90, 0x00, 0xAE,  },
+    0 },                                 
+ };                                              
+                                                
+static struct setting_table s6e63m0_22gamma_180cd_new_hw[] = {
+    { 0xFA,    22,                                         
+        { 0x02, 0x18,0x08, 0x24, 0x6C, 0x77, 0x5F, 0xC2, 0xC7, 0xB9, 0xBB, 
+0xC1, 0xB4, 0xCC, 0xD0, 0xC7, 0x00, 0x97, 0x00, 0x8D, 0x00, 0xAA,            },
+    0 },                                 
+ };                                              
+                                                
+static struct setting_table s6e63m0_22gamma_170cd_new_hw[] = {
+    { 0xFA,    22,                                         
+        { 0x02, 0x18,0x08, 0x24, 0x6F, 0x77, 0x61, 0xC0, 0xC5, 0xB8, 0xBC, 
+0xC2, 0xB4, 0xCD, 0xD1, 0xC8, 0x00, 0x94, 0x00, 0x8A, 0x00, 0xA7, },
+    0 },                                 
+ };                                              
+                                                
+static struct setting_table s6e63m0_22gamma_160cd_new_hw[] = {
+    { 0xFA,    22,                                         
+        { 0x02, 0x18,0x08, 0x24, 0x6F, 0x78, 0x64, 0xC2, 0xC7, 0xB9, 0xBC, 
+0xC2, 0xB5, 0xCD, 0xD1, 0xC8, 0x00, 0x91, 0x00, 0x87, 0x00, 0xA3,  },
+    0 },                                 
+ };                                              
+                                                
+static struct setting_table s6e63m0_22gamma_150cd_new_hw[] = {
+    { 0xFA,    22,                                         
+        { 0x02, 0x18,0x08, 0x24, 0x6C, 0x76, 0x61, 0xC3, 0xC7, 0xBA, 0xBD, 
+0xC3, 0xB6, 0xCD, 0xD2, 0xC8, 0x00, 0x8E, 0x00, 0x84, 0x00, 0xA0, },
+    0 },                                 
+ };                                              
+                                                
+static struct setting_table s6e63m0_22gamma_140cd_new_hw[] = {
+    { 0xFA,    22,                                         
+        { 0x02, 0x18,0x08, 0x24, 0x6F, 0x77, 0x66, 0xC3, 0xC7, 0xBA, 0xBD, 
+0xC3, 0xB5, 0xCF, 0xD3, 0xCA, 0x00, 0x8A, 0x00, 0x81, 0x00, 0x9C,         },
+    0 },                                 
+ };                                              
+                                                
+static struct setting_table s6e63m0_22gamma_130cd_new_hw[] = {
+    { 0xFA,    22,                                         
+        { 0x02,0x18,0x08, 0x24, 0x6F, 0x76, 0x66, 0xC4, 0xC8, 0xBB, 0xBE, 
+0xC4, 0xB7, 0xCF, 0xD3, 0xCA, 0x00, 0x87, 0x00, 0x7E, 0x00, 0x98, },
+    0 },                                 
+ };                                              
+                                                
+static struct setting_table s6e63m0_22gamma_120cd_new_hw[] = {
+    { 0xFA,    22,                                         
+        { 0x02, 0x18, 0x08, 0x24, 0x70, 0x75, 0x66, 0xC4, 0xC8, 0xBC, 0xBF, 
+0xC5, 0xB7, 0xD0, 0xD4, 0xCB, 0x00, 0x83, 0x00, 0x7A, 0x00, 0x94,  },
+    0 },                                 
+ };                                              
+                                                
+static struct setting_table s6e63m0_22gamma_110cd_new_hw[] = {
+    { 0xFA,    22,                                         
+        { 0x02, 0x18, 0x08, 0x24, 0x6E, 0x73, 0x67, 0xC5, 0xC9, 0xBC, 0xC0, 
+0xC6, 0xB9, 0xD0, 0xD4, 0xCB, 0x00, 0x80, 0x00, 0x77, 0x00, 0x90,},
+    0 },                                 
+ };                                              
+                                                
+                                                
+static struct setting_table s6e63m0_22gamma_100cd_new_hw[] = {
+    { 0xFA,    22,                                         
+        { 0x02, 0x18, 0x08, 0x24, 0x6E, 0x71, 0x68, 0xC5, 0xC9, 0xBD, 0xC1, 
+0xC6, 0xB9, 0xD2, 0xD6, 0xCD, 0x00, 0x7B, 0x00, 0x73, 0x00, 0x8B,        },
+    0 },                                 
+ };                                              
+                                                
+static struct setting_table s6e63m0_22gamma_90cd_new_hw[] = { 
+    { 0xFA,    22,                                         
+        { 0x02, 0x18, 0x08, 0x24, 0x6E, 0x70, 0x6D, 0xC6, 0xCA, 0xBE, 0xC2, 
+0xC7, 0xBA, 0xD2, 0xD6, 0xCD, 0x00, 0x77, 0x00, 0x6F, 0x00, 0x86, },
+    0 },                                 
+};                                              
+                                                
+static struct setting_table s6e63m0_22gamma_80cd_new_hw[] = { 
+    { 0xFA,    22,                                         
+        { 0x02, 0x18, 0x08, 0x24, 0x6E, 0x6E, 0x6E, 0xC6, 0xCA, 0xBE, 0xC2, 
+0xC7, 0xBA, 0xD4, 0xD8, 0xD0, 0x00, 0x72, 0x00, 0x6A, 0x00, 0x80,  },
+    0 },                                 
+ };                                              
+                                                
+static struct setting_table s6e63m0_22gamma_70cd_new_hw[] = { 
+    { 0xFA,    22,                                         
+        { 0x02, 0x18, 0x08, 0x24, 0x68, 0x6D, 0x6E, 0xC7, 0xCB, 0xBF, 0xC4, 
+0xC9, 0xBC, 0xD5, 0xD9, 0xD0, 0x00, 0x6D, 0x00, 0x65, 0x00, 0x7B, },
+    0 },                                 
+ };                                              
+                                                
+static struct setting_table s6e63m0_22gamma_60cd_new_hw[] = { 
+    { 0xFA,    22,                                         
+        { 0x02, 0x18, 0x08, 0x24, 0x69, 0x69, 0x73, 0xC8, 0xCC, 0xC0, 0xC5, 
+0xCA, 0xBE, 0xD3, 0xD8, 0xCE, 0x00, 0x69, 0x00, 0x61, 0x00, 0x76,  },
+    0 },                                 
+ };                                              
+                                                
+static struct setting_table s6e63m0_22gamma_50cd_new_hw[] = { 
+    { 0xFA,    22,                                         
+        { 0x02, 0x18, 0x08, 0x24, 0x6C, 0x6A, 0x7B, 0xC8, 0xCC, 0xC1, 0xC6, 
+0xCB, 0xBE, 0xD7, 0xDA, 0xD1, 0x00, 0x62, 0x00, 0x5B, 0x00, 0x6F, },
+    0 },                                 
+ }; 
+
+static struct setting_table s6e63m0_22gamma_40cd_new_hw[] = { 
+    { 0xFA,    22,                                         
+        { 0x02, 0x18, 0x08, 0x24, 0x67, 0x5F, 0x7E, 0xC9, 0xCE, 0xC3, 0xC7, 
+0xCB, 0xBF, 0xD9, 0xDD, 0xD5, 0x00, 0x5B, 0x00, 0x54, 0x00, 0x66, },
+    0 },                                 
+}; 
+
+static struct setting_table s6e63m0_22gamma_30cd_new_hw[] = { 
+    { 0xFA,    22,
+        { 0x02, 0x18,0x08,0x24,0x5D,0x4B,0x81,0xC9,0xCE,0xC5,0xC9,0xCD,
+0xC1,0xDA,0xDD,0xD4,0x00,0x53,0x00,0x4D,0x00,0x5E,},
+    0 },
+ };
+
+static struct setting_table s6e63m0_19gamma_300cd_new_hw[] = {
+    { 0xFA,    22,
+    {   0x02,0x18, 0x08, 0x24, 0x77, 0x7E, 0x61, 0xC1, 0xC7, 0xBA, 0xBC, 
+0xC1, 0xB5, 0xCB, 0xCF, 0xC6, 0x00, 0xB7, 0x00, 0xAB, 0x00, 0xCF, },
+    0 },
+};
+
+static struct setting_table s6e63m0_19gamma_290cd_new_hw[] = {
+    { 0xFA,    22,
+    {0x02,0x18, 0x08, 0x24, 0x77, 0x7F, 0x62, 0xC2, 0xC7, 0xBA, 0xBC, 
+0xC2, 0xB6, 0xCB, 0xCF, 0xC6, 0x00, 0xB5, 0x00, 0xA9, 0x00, 0xCC, },
+    0 },
+};
+
+static struct setting_table s6e63m0_19gamma_280cd_new_hw[] = {
+    { 0xFA,    22,
+    {	0x02,0x18, 0x08, 0x24, 0x78, 0x80, 0x62, 0xC3, 0xC8, 0xBC, 0xBB, 
+0xC1, 0xB4, 0xCC, 0xD1, 0xC8, 0x00, 0xB3, 0x00, 0xA6, 0x00, 0xC9,  },
+    0 },
+};
+
+                                                
+static struct setting_table s6e63m0_19gamma_270cd_new_hw[] = {
+    { 0xFA,    22,
+    {	0x02,0x18, 0x08, 0x24, 0x79, 0x80, 0x63, 0xC2, 0xC8, 0xBB, 0xBC, 
+0xC2, 0xB6, 0xCC, 0xD1, 0xC8, 0x00, 0xB1, 0x00, 0xA4, 0x00, 0xC6, },
+    0 },
+};                                              
+                                                
+static struct setting_table s6e63m0_19gamma_260cd_new_hw[] = {
+    { 0xFA,    22,
+    {	0x02,0x18, 0x08, 0x24, 0x78, 0x82, 0x64, 0xC4, 0xC9, 0xBC, 0xBC, 
+0xC2, 0xB6, 0xCD, 0xD2, 0xC9, 0x00, 0xAE, 0x00, 0xA1, 0x00, 0xC3, },
+    0 },
+};                                              
+                                                
+static struct setting_table s6e63m0_19gamma_250cd_new_hw[] = {
+    { 0xFA,    22,
+    {	0x02,0x18, 0x08, 0x24, 0x77, 0x81, 0x63, 0xC4, 0xC9, 0xBD, 0xBD, 
+0xC3, 0xB6, 0xCD, 0xD2, 0xC9, 0x00, 0xAC, 0x00, 0x9F, 0x00, 0xC1, },
+    0 },
+};                                              
+                                                
+static struct setting_table s6e63m0_19gamma_240cd_new_hw[] = {
+    { 0xFA,    22,
+    {	0x02,0x18, 0x08, 0x24, 0x79, 0x80, 0x63, 0xC3, 0xC9, 0xBC, 0xBF, 
+0xC4, 0xB8, 0xCD, 0xD2, 0xC9, 0x00, 0xA9, 0x00, 0x9D, 0x00, 0xBE, },
+    0 },
+};                                              
+                                                
+static struct setting_table s6e63m0_19gamma_230cd_new_hw[] = {
+    { 0xFA,    22,
+    {	0x02,0x18, 0x08, 0x24, 0x78, 0x81, 0x64, 0xC5, 0xC9, 0xBD, 0xBE, 
+0xC4, 0xB7, 0xCE, 0xD3, 0xCB, 0x00, 0xA6, 0x00, 0x9A, 0x00, 0xBA, },
+    0 },
+};                                              
+                                                
+static struct setting_table s6e63m0_19gamma_220cd_new_hw[] = {
+    { 0xFA,    22,
+    {	0x02, 0x18, 0x08, 0x24, 0x7A, 0x81, 0x66, 0xC4, 0xC9, 0xBC, 0xBF, 
+    0xC5, 0xB8, 0xCE, 0xD3, 0xCB, 0x00, 0xA4, 0x00, 0x98, 0x00, 0xB8,     },
+    0 },
+};                                              
+                                                
+static struct setting_table s6e63m0_19gamma_210cd_new_hw[] = {
+    { 0xFA,    22,
+    {	0x02,0x18, 0x08, 0x24, 0x7A, 0x82, 0x66, 0xC5, 0xCA, 0xBE, 0xBF, 
+0xC5, 0xB8, 0xCF, 0xD4, 0xCB, 0x00, 0xA1, 0x00, 0x95, 0x00, 0xB5, },
+    0 },
+};                                              
+                                                
+static struct setting_table s6e63m0_19gamma_200cd_new_hw[] = {
+    { 0xFA,    22,
+    {	0x02,0x18, 0x08, 0x24, 0x7C, 0x83, 0x69, 0xC5, 0xCA, 0xBD, 0xBF, 
+0xC5, 0xB8, 0xD0, 0xD4, 0xCC, 0x00, 0x9E, 0x00, 0x93, 0x00, 0xB2,     },
+    0 },
+};                                              
+                                                
+static struct setting_table s6e63m0_19gamma_190cd_new_hw[] = {
+    { 0xFA,    22,
+    {	0x02,0x18, 0x08, 0x24, 0x7C, 0x83, 0x69, 0xC5, 0xCA, 0xBD, 0xBF, 
+0xC5, 0xB8, 0xD0, 0xD4, 0xCC, 0x00, 0x9E, 0x00, 0x93, 0x00, 0xB2,     },
+    0 },
+};                                              
+                                                
+static struct setting_table s6e63m0_19gamma_180cd_new_hw[] = {
+    { 0xFA,    22,
+    {	0x02, 0x18, 0x08, 0x24, 0x7A, 0x83, 0x68, 0xC7, 0xCC, 0xBF, 0xC1, 
+0xC6, 0xBA, 0xD1, 0xD5, 0xCD, 0x00, 0x97, 0x00, 0x8D, 0x00, 0xAA, },
+    0 },
+};                                              
+                                                
+static struct setting_table s6e63m0_19gamma_170cd_new_hw[] = {
+    { 0xFA,    22,
+    {	0x02,0x18, 0x08, 0x24, 0x7D, 0x84, 0x6A, 0xC6, 0xCB, 0xBE, 0xC2, 
+0xC7, 0xBB, 0xD2, 0xD6, 0xCE, 0x00, 0x94, 0x00, 0x8A, 0x00, 0xA7, },
+    0 },
+};                                              
+                                                
+static struct setting_table s6e63m0_19gamma_160cd_new_hw[] = {
+    { 0xFA,    22,
+    {	0x02,0x18, 0x08, 0x24, 0x7D, 0x85, 0x6C, 0xC6, 0xCB, 0xBE, 0xC3, 
+0xC8, 0xBC, 0xD2, 0xD6, 0xCE, 0x00, 0x91, 0x00, 0x87, 0x00, 0xA3,   },
+    0 },
+};                                              
+                                                
+static struct setting_table s6e63m0_19gamma_150cd_new_hw[] = {
+    { 0xFA,    22,
+    {	0x02,0x18, 0x08, 0x24, 0x7D, 0x87, 0x6C, 0xC8, 0xCC, 0xC0, 0xC2, 
+0xC8, 0xBB, 0xD3, 0xD7, 0xCF, 0x00, 0x8E, 0x00, 0x84, 0x00, 0xA0, },
+    0 },
+};                                              
+                                                
+static struct setting_table s6e63m0_19gamma_140cd_new_hw[] = {
+    { 0xFA,    22,
+    {	0x02,0x18, 0x08, 0x24, 0x7F, 0x88, 0x6F, 0xC7, 0xCB, 0xBE, 0xC4, 
+0xCA, 0xBE, 0xD4, 0xD7, 0xCF, 0x00, 0x8A, 0x00, 0x81, 0x00, 0x9C, },
+    0 },
+};                                              
+                                                
+static struct setting_table s6e63m0_19gamma_130cd_new_hw[] = {
+    { 0xFA,    22,
+    {	0x02,0x18, 0x08, 0x24, 0x7F, 0x88, 0x6F, 0xC9, 0xCD, 0xC1, 0xC4, 
+0xC9, 0xBD, 0xD4, 0xD8, 0xD0, 0x00, 0x87, 0x00, 0x7E, 0x00, 0x98, },
+    0 },
+};                                              
+                                                
+static struct setting_table s6e63m0_19gamma_120cd_new_hw[] = {
+    { 0xFA,    22,
+    {	0x02,0x18, 0x08, 0x24, 0x7F, 0x88, 0x6F, 0xC9, 0xCD, 0xC1, 0xC4, 
+0xC9, 0xBD, 0xD4, 0xD8, 0xD0, 0x00, 0x87, 0x00, 0x7E, 0x00, 0x98, },
+    0 },
+};                                              
+                                                
+static struct setting_table s6e63m0_19gamma_110cd_new_hw[] = {
+    { 0xFA,    22,
+    {	0x02,0x18, 0x08, 0x24, 0x88, 0x85, 0x80, 0xC8, 0xCD, 0xC1, 0xC6, 
+0xCB, 0xBF, 0xD5, 0xD9, 0xD1, 0x00, 0x80, 0x00, 0x77, 0x00, 0x90, },
+    0 },
+};                                              
+                                                
+static struct setting_table s6e63m0_19gamma_100cd_new_hw[] = {
+    { 0xFA,    22,
+    {	0x02,0x18, 0x08, 0x24, 0x88, 0x84, 0x81, 0xC9, 0xCE, 0xC2, 0xC6, 
+0xCB, 0xBF, 0xD7, 0xDA, 0xD2, 0x00, 0x7B, 0x00, 0x73, 0x00, 0x8B, },
+    0 },
+};                                              
+                                                
+static struct setting_table s6e63m0_19gamma_90cd_new_hw[] = { 
+    { 0xFA,    22,
+    {	0x02,0x18, 0x08, 0x24, 0x86, 0x85, 0x82, 0xCA, 0xCD, 0xC2, 0xC7, 
+0xCC, 0xC0, 0xD7, 0xDB, 0xD3, 0x00, 0x77, 0x00, 0x6F, 0x00, 0x86, },
+    0 },
+};                                              
+                                                
+static struct setting_table s6e63m0_19gamma_80cd_new_hw[] = { 
+    { 0xFA,    22,
+    {	0x02,0x18, 0x08, 0x24, 0x87, 0x82, 0x83, 0xCB, 0xCF, 0xC4, 0xC8, 
+0xCD, 0xC1, 0xD8, 0xDC, 0xD4, 0x00, 0x72, 0x00, 0x6A, 0x00, 0x80, },
+    0 },
+};                                              
+                                                
+static struct setting_table s6e63m0_19gamma_70cd_new_hw[] = { 
+    { 0xFA,    22,
+    {	0x02,0x18, 0x08, 0x24, 0x87, 0x83, 0x86, 0xCC, 0xD0, 0xC5, 0xC9, 
+0xCE, 0xC2, 0xD9, 0xDD, 0xD4, 0x00, 0x6D, 0x00, 0x65, 0x00, 0x7B, },
+    0 },
+};                                              
+                                                
+static struct setting_table s6e63m0_19gamma_60cd_new_hw[] = { 
+    { 0xFA,    22,
+    {	0x02,0x18, 0x08, 0x24, 0x87, 0x83, 0x86, 0xCC, 0xD0, 0xC5, 0xC9, 
+0xCE, 0xC2, 0xD9, 0xDD, 0xD4, 0x00, 0x6D, 0x00, 0x65, 0x00, 0x7B, },
+    0 },
+};                                              
+                                                
+static struct setting_table s6e63m0_19gamma_50cd_new_hw[] = { 
+    { 0xFA,    22,
+    {	0x02,0x18, 0x08, 0x24, 0x7E, 0x86, 0x79, 0xCC, 0xCF, 0xC5, 0xCC, 
+0xD0, 0xC5, 0xDA, 0xDE, 0xD5, 0x00, 0x62, 0x00, 0x5B, 0x00, 0x6F, },
+    0 },
+};                                              
+
+static struct setting_table s6e63m0_19gamma_40cd_new_hw[] = { 
+    { 0xFA,    22,
+    {	0x02,0x18, 0x08, 0x24, 0x80, 0x88, 0x81, 0xCE, 0xD2, 0xC7, 0xCE, 
+0xD2, 0xC8, 0xDC, 0xE0, 0xD8, 0x00, 0x5B, 0x00, 0x54, 0x00, 0x66, },
+    0 },
+}; 
+
+static struct setting_table s6e63m0_19gamma_30cd_new_hw[] = { 
+    { 0xFA,    22,
+    {	0x02,0x18,0x08,0x24,0x7D,0x80,0x85,0xD0,0xD4,0xCA,0xCE,0xD2,
+0xC7,0xDE,0xE1,0xD9,0x00,0x53,0x00,0x4D,0x00,0x5E,},
+    0 },
+};
+#endif
+static struct setting_table gamma_update[] = { 
+    { 0xFA,    1, 
+          { 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+              0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,},    
+    0 },                  
+};
+
+static struct setting_table display_on_seq[] = { 
+    { 0x29,    0, 
+          { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+              0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,},    
+    0 },                  
+};
+
+//////////////////////////////////////////////////////////////
+
+static struct samsung_spi_data panel_sequence[] = {
+	{ .addr = 0xf8, .len = 14, .data = { 0x01, 0x27, 0x27, 0x07, 0x07, 0x54, 0x9f, 0x63, 0x86, 0x1a, 
+									0x33, 0x0d, 0x00, 0x00 } },
+};
+static struct samsung_spi_data display_sequence_rev0[] = {
+	{ .addr = 0xf2, .len = 5, .data = { 0x02, 0x03, 0x1c, 0x10, 0x10 } },
+	{ .addr = 0xf7, .len = 3, .data = { 0x00, 0x00, 0x00 } },
+};
+
+static struct samsung_spi_data display_sequence[] = {
+	{ .addr = 0xf2, .len = 5, .data = { 0x02, 0x03, 0x1c, 0x10, 0x10 } },
+	{ .addr = 0xf7, .len = 3, .data = { 0x03, 0x00, 0x00 } },
+};
+
+
+
+static struct samsung_spi_data etc_sequence[] = {
+	{ .addr = 0xF6, .len = 3, .data = { 0x00, 0x8E, 0x07 } },
+	{ .addr = 0xB3, .len = 1, .data = { 0x0C } }, 						
+};
+
+static struct samsung_spi_data SEQ_ACL_OFF[] = {
+	{.addr = 0xC0, .len=1, .data = { 0x00} },
+};
+
+static struct samsung_spi_data SEQ_ACL_ON[] = {
+	{.addr = 0xC0, .len=1, .data =  { 0x01} },
+};
+
+
+static struct samsung_spi_data SEQ_ACL_40P[] = {
+	{.addr = 0xC1, .len=27, .data =  { 0x4D, 0x96, 0x1D, 0x00, 0x00, 0x01, 0xDF, 0x00, 0x00, 0x03,
+								0x1F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x06, 0x0C, 0x11, 
+								0x16, 0x1C, 0x21, 0x26, 0x2B, 0x31, 0x36 } },
+};
+
+static struct samsung_spi_data SEQ_ACL_48P[] = {
+	{.addr = 0xC1, .len=27, .data =  { 0x4D, 0x96, 0x1D, 0x00, 0x00, 0x01, 0xDF, 0x00, 0x00, 0x03,
+								0x1F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x08, 0x0E, 0x15, 
+								0x1B, 0x22, 0x28, 0x2F, 0x35, 0x3C, 0x42 } },
+};
+
+static struct samsung_spi_data SEQ_ACL_50P[] = {
+	{.addr = 0xC1, .len=27, .data =  { 0x4D, 0x96, 0x1D, 0x00, 0x00, 0x01, 0xDF, 0x00, 0x00, 0x03,
+								0x1F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x08, 0x0F, 0x16, 
+								0x1D, 0x24, 0x2A, 0x31, 0x38, 0x3F, 0x46 } },
+};
+
+static struct samsung_spi_data *ACL_cutoff_set[] = {
+	SEQ_ACL_40P,
+	SEQ_ACL_48P,
+	SEQ_ACL_50P,
+};
+
+// ELVSS //////////////////////////////////////////////
+
+static struct samsung_spi_data SEQ_ELVSS_OFF[] = {
+	{.addr=0xB1,  .len=1, .data={ 0x0A, } },
+};
+
+static struct samsung_spi_data SEQ_ELVSS_ON[] = {
+	{.addr=0xB1,  .len=1, .data={ 0x0B, }},
+};
+
+static struct samsung_spi_data SEQ_ELVSS_49[] = {
+	{.addr=0xB2,  .len=4, .data={ 0x16,  0x16,	 0x16,	 0x16, }},
+};
+
+static struct samsung_spi_data SEQ_ELVSS_43[] = {
+	{.addr=0xB2,  .len=4, .data={0x22,	 0x22,	 0x22,	 0x22, }},
+};
+
+static struct samsung_spi_data SEQ_ELVSS_41[] = {
+	{.addr=0xB2,  .len=4, .data={0x24,	 0x24,	 0x24,	 0x24,}},
+};
+
+static struct samsung_spi_data SEQ_ELVSS_37[] = {
+	{.addr=0xB2,  .len=4, .data={0x28,	 0x28,	 0x28,	 0x28,}},
+};
+
+static struct samsung_spi_data *SEQ_ELVSS_set[] = {
+	SEQ_ELVSS_37,
+	SEQ_ELVSS_41,
+	SEQ_ELVSS_43,
+	SEQ_ELVSS_49,
+};
+
+#endif /*__LCDC_S6E63M0_H__*/
+
